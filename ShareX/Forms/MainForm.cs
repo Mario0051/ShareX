@@ -2005,8 +2005,24 @@ namespace ShareX
             }
         }
 
+        // ***mod*** start
+        private void AutoRemoveAllItems()
+        {
+            RemoveAllItems();
+            TaskManager.RecentManager.Clear();
+        }
+
+        private void MainForm_Activated(object sender, EventArgs e)
+        {
+            AutoRemoveAllItems();
+        }
+        // ***mod*** stop
+
         private void cmsTray_Opened(object sender, EventArgs e)
         {
+            // ***mod*** start
+            AutoRemoveAllItems();
+            // ***mod*** stop
             if (Program.Settings.TrayAutoExpandCaptureMenu)
             {
                 tsmiTrayCapture.Select();
