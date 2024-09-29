@@ -308,6 +308,7 @@ namespace ShareX
 
         public bool PlaySoundAfterCapture = true;
         public bool PlaySoundAfterUpload = true;
+        public bool PlaySoundAfterAction = true;
         public bool ShowToastNotificationAfterTaskCompleted = true;
         public float ToastWindowDuration = 3f;
         public float ToastWindowFadeDuration = 1f;
@@ -317,14 +318,15 @@ namespace ShareX
         public ToastClickAction ToastWindowRightClickAction = ToastClickAction.CloseNotification;
         public ToastClickAction ToastWindowMiddleClickAction = ToastClickAction.AnnotateImage;
         public bool ToastWindowAutoHide = true;
+        public bool DisableNotificationsOnFullscreen = false;
         public bool UseCustomCaptureSound = false;
         public string CustomCaptureSoundPath = "";
         public bool UseCustomTaskCompletedSound = false;
         public string CustomTaskCompletedSoundPath = "";
+        public bool UseCustomActionCompletedSound = false;
+        public string CustomActionCompletedSoundPath = "";
         public bool UseCustomErrorSound = false;
         public string CustomErrorSoundPath = "";
-        public bool DisableNotifications = false;
-        public bool DisableNotificationsOnFullscreen = false;
 
         #endregion
     }

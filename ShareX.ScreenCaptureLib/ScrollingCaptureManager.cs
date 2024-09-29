@@ -25,9 +25,9 @@
 
 using ShareX.HelpersLib;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -40,9 +40,11 @@ namespace ShareX.ScreenCaptureLib
         public Bitmap Result { get; private set; }
         public bool IsCapturing { get; private set; }
 
-        private List<Bitmap> images = new List<Bitmap>();
+        private Bitmap lastScreenshot;
+        private Bitmap previousScreenshot;
         private bool stopRequested;
-        private int bestMatchCount, bestMatchIndex;
+        private ScrollingCaptureStatus status;
+        private int bestMatchCount, bestMatchIndex, bestIgnoreBottomOffset;
         private WindowInfo selectedWindow;
         private Rectangle selectedRectangle;
 
@@ -58,14 +60,16 @@ namespace ShareX.ScreenCaptureLib
 
         private void Reset(bool keepResult = false)
         {
-            if (images != null)
+            if (lastScreenshot != null)
             {
-                foreach (Bitmap bmp in images)
-                {
-                    bmp?.Dispose();
-                }
+                lastScreenshot.Dispose();
+                lastScreenshot = null;
+            }
 
-                images.Clear();
+            if (previousScreenshot != null)
+            {
+                previousScreenshot.Dispose();
+                previousScreenshot = null;
             }
 
             if (!keepResult && Result != null)
@@ -75,14 +79,16 @@ namespace ShareX.ScreenCaptureLib
             }
         }
 
-        public async Task StartCapture()
+        public async Task<ScrollingCaptureStatus> StartCapture()
         {
             if (!IsCapturing && selectedWindow != null && !selectedRectangle.IsEmpty)
             {
                 IsCapturing = true;
                 stopRequested = false;
+                status = ScrollingCaptureStatus.Failed;
                 bestMatchCount = 0;
                 bestMatchIndex = 0;
+                bestIgnoreBottomOffset = 0;
                 Reset();
 
                 ScrollingCaptureRegionForm regionForm = null;
@@ -107,19 +113,14 @@ namespace ShareX.ScreenCaptureLib
                         await Task.Delay(Options.ScrollDelay);
                     }
 
+                    Screenshot screenshot = new Screenshot()
+                    {
+                        CaptureCursor = false
+                    };
+
                     while (!stopRequested)
                     {
-                        Screenshot screenshot = new Screenshot()
-                        {
-                            CaptureCursor = false
-                        };
-
-                        Bitmap bmp = screenshot.CaptureRectangle(selectedRectangle);
-
-                        if (bmp != null)
-                        {
-                            images.Add(bmp);
-                        }
+                        lastScreenshot = screenshot.CaptureRectangle(selectedRectangle);
 
                         if (CompareLastTwoImages())
                         {
@@ -130,14 +131,35 @@ namespace ShareX.ScreenCaptureLib
 
                         Stopwatch timer = Stopwatch.StartNew();
 
-                        if (images.Count > 0)
+                        if (lastScreenshot != null)
                         {
-                            Result = await CombineImagesAsync(Result, images[images.Count - 1]);
+                            Bitmap newResult = await CombineImagesAsync(Result, lastScreenshot);
+
+                            if (newResult != null)
+                            {
+                                Result?.Dispose();
+                                Result = newResult;
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
 
                         if (stopRequested)
                         {
                             break;
+                        }
+
+                        if (lastScreenshot != null)
+                        {
+                            if (previousScreenshot != null)
+                            {
+                                previousScreenshot.Dispose();
+                            }
+
+                            previousScreenshot = lastScreenshot;
+                            lastScreenshot = null;
                         }
 
                         int delay = Options.ScrollDelay - (int)timer.ElapsedMilliseconds;
@@ -156,6 +178,8 @@ namespace ShareX.ScreenCaptureLib
                     IsCapturing = false;
                 }
             }
+
+            return status;
         }
 
         public void StopCapture()
@@ -187,9 +211,9 @@ namespace ShareX.ScreenCaptureLib
 
         private bool CompareLastTwoImages()
         {
-            if (images.Count > 1)
+            if (lastScreenshot != null && previousScreenshot != null)
             {
-                return ImageHelpers.CompareImages(images[images.Count - 1], images[images.Count - 2]);
+                return ImageHelpers.CompareImages(lastScreenshot, previousScreenshot);
             }
 
             return false;
@@ -204,18 +228,17 @@ namespace ShareX.ScreenCaptureLib
         {
             if (result == null)
             {
+                status = ScrollingCaptureStatus.Successful;
+
                 return (Bitmap)currentImage.Clone();
             }
 
             int matchCount = 0;
             int matchIndex = 0;
             int matchLimit = currentImage.Height / 2;
-            int ignoreSideOffset = Math.Max(50, currentImage.Width / 20);
 
-            if (currentImage.Width < ignoreSideOffset * 3)
-            {
-                ignoreSideOffset = 0;
-            }
+            int ignoreSideOffset = Math.Max(50, currentImage.Width / 20);
+            ignoreSideOffset = Math.Min(ignoreSideOffset, currentImage.Width / 3);
 
             Rectangle rect = new Rectangle(ignoreSideOffset, result.Height - currentImage.Height, currentImage.Width - ignoreSideOffset * 2, currentImage.Height);
 
@@ -225,8 +248,31 @@ namespace ShareX.ScreenCaptureLib
             int pixelSize = stride / result.Width;
             IntPtr resultScan0 = bdResult.Scan0 + pixelSize * ignoreSideOffset;
             IntPtr currentImageScan0 = bdCurrentImage.Scan0 + pixelSize * ignoreSideOffset;
-            int rectBottom = rect.Bottom - 1;
             int compareLength = pixelSize * rect.Width;
+
+            int ignoreBottomOffsetMax = currentImage.Height / 3;
+            int ignoreBottomOffset = Math.Max(50, currentImage.Height / 10);
+
+            if (Options.AutoIgnoreBottomEdge)
+            {
+                IntPtr resultScan0Last = resultScan0 + (result.Height - 1) * stride;
+                IntPtr currentImageScan0Last = currentImageScan0 + (currentImage.Height - 1) * stride;
+
+                for (int i = 0; i <= ignoreBottomOffsetMax; i++)
+                {
+                    if (NativeMethods.memcmp(resultScan0Last - i * stride, currentImageScan0Last - i * stride, compareLength) != 0)
+                    {
+                        ignoreBottomOffset += i;
+                        break;
+                    }
+                }
+
+                ignoreBottomOffset = Math.Max(ignoreBottomOffset, bestIgnoreBottomOffset);
+            }
+
+            ignoreBottomOffset = Math.Min(ignoreBottomOffset, ignoreBottomOffsetMax);
+
+            int rectBottom = rect.Bottom - ignoreBottomOffset - 1;
 
             for (int currentImageY = currentImage.Height - 1; currentImageY >= 0 && matchCount < matchLimit; currentImageY--)
             {
@@ -254,10 +300,14 @@ namespace ShareX.ScreenCaptureLib
             result.UnlockBits(bdResult);
             currentImage.UnlockBits(bdCurrentImage);
 
+            bool bestGuess = false;
+
             if (matchCount == 0 && bestMatchCount > 0)
             {
                 matchCount = bestMatchCount;
                 matchIndex = bestMatchIndex;
+                ignoreBottomOffset = bestIgnoreBottomOffset;
+                bestGuess = true;
             }
 
             if (matchCount > 0)
@@ -270,24 +320,38 @@ namespace ShareX.ScreenCaptureLib
                     {
                         bestMatchCount = matchCount;
                         bestMatchIndex = matchIndex;
+                        bestIgnoreBottomOffset = ignoreBottomOffset;
                     }
 
-                    Bitmap newResult = new Bitmap(result.Width, result.Height + matchHeight);
+                    Bitmap newResult = new Bitmap(result.Width, result.Height - ignoreBottomOffset + matchHeight);
 
                     using (Graphics g = Graphics.FromImage(newResult))
                     {
-                        g.DrawImage(result, new Rectangle(0, 0, result.Width, result.Height),
-                            new Rectangle(0, 0, result.Width, result.Height), GraphicsUnit.Pixel);
-                        g.DrawImage(currentImage, new Rectangle(0, result.Height, currentImage.Width, matchHeight),
+                        g.CompositingMode = CompositingMode.SourceCopy;
+                        g.InterpolationMode = InterpolationMode.NearestNeighbor;
+
+                        g.DrawImage(result, new Rectangle(0, 0, result.Width, result.Height - ignoreBottomOffset),
+                            new Rectangle(0, 0, result.Width, result.Height - ignoreBottomOffset), GraphicsUnit.Pixel);
+                        g.DrawImage(currentImage, new Rectangle(0, result.Height - ignoreBottomOffset, currentImage.Width, matchHeight),
                             new Rectangle(0, matchIndex + 1, currentImage.Width, matchHeight), GraphicsUnit.Pixel);
                     }
 
-                    result.Dispose();
-                    result = newResult;
+                    if (bestGuess)
+                    {
+                        status = ScrollingCaptureStatus.PartiallySuccessful;
+                    }
+                    else if (status != ScrollingCaptureStatus.PartiallySuccessful)
+                    {
+                        status = ScrollingCaptureStatus.Successful;
+                    }
+
+                    return newResult;
                 }
             }
 
-            return result;
+            status = ScrollingCaptureStatus.Failed;
+
+            return null;
         }
     }
 }

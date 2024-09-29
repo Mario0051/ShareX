@@ -39,7 +39,11 @@ namespace ShareX.HelpersLib
         public new void Enqueue(T obj)
         {
             base.Enqueue(obj);
-            while (Count > Size) Dequeue();
+
+            while (Count > Size)
+            {
+                Dequeue();
+            }
         }
     }
 }

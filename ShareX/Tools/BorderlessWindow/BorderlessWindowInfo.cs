@@ -23,10 +23,25 @@
 
 #endregion License Information (GPL v3)
 
+using ShareX.HelpersLib;
+using System;
+using System.Drawing;
+
 namespace ShareX
 {
-    public interface IStartupManager
+    public class BorderlessWindowInfo
     {
-        StartupState State { get; set; }
+        public IntPtr Handle { get; set; }
+        public Rectangle Rectangle { get; set; }
+        public WindowStyles Style { get; set; }
+        public WindowStyles ExStyle { get; set; }
+
+        public BorderlessWindowInfo(WindowInfo windowInfo)
+        {
+            Handle = windowInfo.Handle;
+            Rectangle = NativeMethods.GetWindowRect(windowInfo.Handle);
+            Style = windowInfo.Style;
+            ExStyle = windowInfo.ExStyle;
+        }
     }
 }

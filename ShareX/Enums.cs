@@ -42,6 +42,13 @@ namespace ShareX
         Unknown
     }
 
+    public enum UpdateChannel // Localized
+    {
+        Release,
+        PreRelease,
+        Dev
+    }
+
     public enum SupportedLanguage
     {
         Automatic, // Localized
@@ -263,6 +270,8 @@ namespace ShareX
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         PinToScreenFromFile,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        PinToScreenCloseAll,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
         ImageEditor,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         ImageBeautifier,
@@ -294,6 +303,10 @@ namespace ShareX
         ClipboardViewer,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         BorderlessWindow,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        ActiveWindowBorderless,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        ActiveWindowTopMost,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         InspectWindow,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
@@ -414,5 +427,13 @@ namespace ShareX
         UploadAudio,
         UploadText,
         ShortenURL
+    }
+
+    public enum NotificationSound
+    {
+        Capture,
+        TaskCompleted,
+        ActionCompleted,
+        Error
     }
 }

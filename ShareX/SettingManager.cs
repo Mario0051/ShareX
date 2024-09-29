@@ -191,7 +191,7 @@ namespace ShareX
 
         private static void ApplicationConfigBackwardCompatibilityTasks()
         {
-            if (Settings.IsFirstTimeRun && SystemOptions.DisableUpload)
+            if (SystemOptions.DisableUpload)
             {
                 DefaultTaskSettings.AfterCaptureJob = DefaultTaskSettings.AfterCaptureJob.Remove(AfterCaptureTasks.UploadImageToHost);
             }
@@ -235,6 +235,19 @@ namespace ShareX
                 DefaultTaskSettings.CaptureSettings.ScrollingCaptureOptions = new ScrollingCaptureOptions();
                 DefaultTaskSettings.CaptureSettings.FFmpegOptions.FixSources();
             }
+
+            if (Settings.IsUpgradeFrom("16.0.2"))
+            {
+                if (Settings.CheckPreReleaseUpdates)
+                {
+                    Settings.UpdateChannel = UpdateChannel.PreRelease;
+                }
+
+                if (!DefaultTaskSettings.CaptureSettings.SurfaceOptions.UseDimming)
+                {
+                    DefaultTaskSettings.CaptureSettings.SurfaceOptions.BackgroundDimStrength = 0;
+                }
+            }
         }
 
         private static void MigrateHistoryFile()
@@ -272,6 +285,17 @@ namespace ShareX
 
         private static void HotkeysConfigBackwardCompatibilityTasks()
         {
+            if (SystemOptions.DisableUpload)
+            {
+                foreach (TaskSettings taskSettings in HotkeysConfig.Hotkeys.Select(x => x.TaskSettings))
+                {
+                    if (taskSettings != null)
+                    {
+                        taskSettings.AfterCaptureJob = taskSettings.AfterCaptureJob.Remove(AfterCaptureTasks.UploadImageToHost);
+                    }
+                }
+            }
+
             if (Settings.IsUpgradeFrom("15.0.1"))
             {
                 foreach (TaskSettings taskSettings in HotkeysConfig.Hotkeys.Select(x => x.TaskSettings))

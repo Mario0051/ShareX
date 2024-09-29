@@ -24,6 +24,7 @@
 #endregion License Information (GPL v3)
 
 using ShareX.HelpersLib;
+using ShareX.ScreenCaptureLib.Properties;
 using System;
 using System.Drawing;
 using System.Threading;
@@ -115,13 +116,27 @@ namespace ShareX.ScreenCaptureLib
             WindowState = FormWindowState.Minimized;
             btnCapture.Enabled = false;
             btnUpload.Enabled = false;
+            btnCopy.Enabled = false;
             btnOptions.Enabled = false;
             lblResultSize.Text = "";
             ResetPictureBox();
 
             try
             {
-                await manager.StartCapture();
+                ScrollingCaptureStatus status = await manager.StartCapture();
+
+                switch (status)
+                {
+                    case ScrollingCaptureStatus.Failed:
+                        pbStatus.Image = Resources.control_record;
+                        break;
+                    case ScrollingCaptureStatus.PartiallySuccessful:
+                        pbStatus.Image = Resources.control_record_yellow;
+                        break;
+                    case ScrollingCaptureStatus.Successful:
+                        pbStatus.Image = Resources.control_record_green;
+                        break;
+                }
             }
             catch (Exception e)
             {
@@ -133,19 +148,25 @@ namespace ShareX.ScreenCaptureLib
             btnCapture.Enabled = true;
             btnOptions.Enabled = true;
 
-            if (manager.Result != null)
-            {
-                btnUpload.Enabled = true;
-                pbOutput.Image = manager.Result;
-                pOutput.AutoScrollPosition = new Point(0, 0);
-                lblResultSize.Text = $"{manager.Result.Width}x{manager.Result.Height}";
-            }
+            LoadImage(manager.Result);
 
             this.ForceActivate();
 
             if (Options.AutoUpload)
             {
                 UploadResult();
+            }
+        }
+
+        private void LoadImage(Bitmap bmp)
+        {
+            if (bmp != null)
+            {
+                btnUpload.Enabled = true;
+                btnCopy.Enabled = true;
+                pbOutput.Image = bmp;
+                pOutput.AutoScrollPosition = new Point(0, 0);
+                lblResultSize.Text = $"{bmp.Width}x{bmp.Height}";
             }
         }
 
@@ -169,6 +190,14 @@ namespace ShareX.ScreenCaptureLib
             if (manager.Result != null)
             {
                 OnUploadRequested((Bitmap)manager.Result.Clone());
+            }
+        }
+
+        private void CopyResult()
+        {
+            if (manager.Result != null)
+            {
+                ClipboardHelpers.CopyImage(manager.Result);
             }
         }
 
@@ -197,12 +226,22 @@ namespace ShareX.ScreenCaptureLib
             UploadResult();
         }
 
+        private void btnCopy_Click(object sender, EventArgs e)
+        {
+            CopyResult();
+        }
+
         private void btnOptions_Click(object sender, EventArgs e)
         {
             using (ScrollingCaptureOptionsForm scrollingCaptureOptionsForm = new ScrollingCaptureOptionsForm(Options))
             {
                 scrollingCaptureOptionsForm.ShowDialog();
             }
+        }
+
+        private void btnHelp_Click(object sender, EventArgs e)
+        {
+            URLHelpers.OpenURL(Links.DocsScrollingScreenshot);
         }
 
         private void pbOutput_MouseDown(object sender, MouseEventArgs e)

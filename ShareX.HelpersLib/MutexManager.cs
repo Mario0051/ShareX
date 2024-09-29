@@ -23,38 +23,62 @@
 
 #endregion License Information (GPL v3)
 
-#if MicrosoftStore
-
 using System;
-using Windows.ApplicationModel;
+using System.Threading;
 
-namespace ShareX
+namespace ShareX.HelpersLib
 {
-    public class CentennialStartupManager : IStartupManager
+    public class MutexManager : IDisposable
     {
-        private const int StartupTargetIndex = 0;
-        private readonly StartupTask packageTask = StartupTask.GetForCurrentPackageAsync().GetAwaiter().GetResult()[StartupTargetIndex];
+        public bool HasHandle { get; private set; }
 
-        public StartupState State
+        private Mutex mutex;
+
+        public MutexManager(string mutexName) : this(mutexName, Timeout.Infinite)
         {
-            get => (StartupState)packageTask.State;
-            set
+        }
+
+        public MutexManager(string mutexName, int timeout)
+        {
+            mutex = new Mutex(false, mutexName);
+
+            try
             {
-                if (value == StartupState.Enabled)
+                HasHandle = mutex.WaitOne(timeout, false);
+            }
+            catch (AbandonedMutexException)
+            {
+                HasHandle = true;
+            }
+        }
+
+        public static bool IsRunning(string mutexName)
+        {
+            try
+            {
+                using (Mutex mutex = new Mutex(false, mutexName, out bool createdNew))
                 {
-                    packageTask.RequestEnableAsync().GetAwaiter().GetResult();
+                    return !createdNew;
                 }
-                else if (value == StartupState.Disabled)
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        public void Dispose()
+        {
+            if (mutex != null)
+            {
+                if (HasHandle)
                 {
-                    packageTask.Disable();
+                    mutex.ReleaseMutex();
                 }
-                else
-                {
-                    throw new NotSupportedException();
-                }
+
+                mutex.Dispose();
             }
         }
     }
 }
-
-#endif

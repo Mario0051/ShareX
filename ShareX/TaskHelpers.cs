@@ -185,16 +185,19 @@ namespace ShareX
                     OpenRuler(safeTaskSettings);
                     break;
                 case HotkeyType.PinToScreen:
-                    PinToScreen();
+                    PinToScreen(safeTaskSettings);
                     break;
                 case HotkeyType.PinToScreenFromScreen:
-                    PinToScreenFromScreen();
+                    PinToScreenFromScreen(safeTaskSettings);
                     break;
                 case HotkeyType.PinToScreenFromClipboard:
-                    PinToScreenFromClipboard();
+                    PinToScreenFromClipboard(safeTaskSettings);
                     break;
                 case HotkeyType.PinToScreenFromFile:
-                    PinToScreenFromFile();
+                    PinToScreenFromFile(safeTaskSettings);
+                    break;
+                case HotkeyType.PinToScreenCloseAll:
+                    PinToScreenCloseAll(safeTaskSettings);
                     break;
                 case HotkeyType.ImageEditor:
                     if (command != null && !string.IsNullOrEmpty(command.Parameter) && File.Exists(command.Parameter))
@@ -270,7 +273,13 @@ namespace ShareX
                     OpenClipboardViewer();
                     break;
                 case HotkeyType.BorderlessWindow:
-                    OpenBorderlessWindow();
+                    OpenBorderlessWindow(safeTaskSettings);
+                    break;
+                case HotkeyType.ActiveWindowBorderless:
+                    MakeActiveWindowBorderless(safeTaskSettings);
+                    break;
+                case HotkeyType.ActiveWindowTopMost:
+                    MakeActiveWindowTopMost(safeTaskSettings);
                     break;
                 case HotkeyType.InspectWindow:
                     OpenInspectWindow();
@@ -283,7 +292,7 @@ namespace ShareX
                     break;
                 // Other
                 case HotkeyType.DisableHotkeys:
-                    ToggleHotkeys();
+                    ToggleHotkeys(safeTaskSettings);
                     break;
                 case HotkeyType.OpenMainWindow:
                     Program.MainForm.ForceActivate();
@@ -372,34 +381,42 @@ namespace ShareX
         {
             MemoryStream ms = new MemoryStream();
 
-            switch (imageFormat)
+            try
             {
-                case EImageFormat.PNG:
-                    ImageHelpers.SavePNG(img, ms, pngBitDepth);
+                switch (imageFormat)
+                {
+                    case EImageFormat.PNG:
+                        ImageHelpers.SavePNG(img, ms, pngBitDepth);
 
-                    if (Program.Settings.PNGStripColorSpaceInformation)
-                    {
-                        using (ms)
+                        if (Program.Settings.PNGStripColorSpaceInformation)
                         {
-                            return ImageHelpers.PNGStripColorSpaceInformation(ms);
+                            using (ms)
+                            {
+                                return ImageHelpers.PNGStripColorSpaceInformation(ms);
+                            }
                         }
-                    }
-                    break;
-                case EImageFormat.JPEG:
-                    using (Bitmap newImage = ImageHelpers.FillBackground(img, Color.White))
-                    {
-                        ImageHelpers.SaveJPEG(newImage, ms, jpegQuality);
-                    }
-                    break;
-                case EImageFormat.GIF:
-                    ImageHelpers.SaveGIF(img, ms, gifQuality);
-                    break;
-                case EImageFormat.BMP:
-                    img.Save(ms, ImageFormat.Bmp);
-                    break;
-                case EImageFormat.TIFF:
-                    img.Save(ms, ImageFormat.Tiff);
-                    break;
+                        break;
+                    case EImageFormat.JPEG:
+                        using (Bitmap newImage = ImageHelpers.FillBackground(img, Color.White))
+                        {
+                            ImageHelpers.SaveJPEG(newImage, ms, jpegQuality);
+                        }
+                        break;
+                    case EImageFormat.GIF:
+                        ImageHelpers.SaveGIF(img, ms, gifQuality);
+                        break;
+                    case EImageFormat.BMP:
+                        img.Save(ms, ImageFormat.Bmp);
+                        break;
+                    case EImageFormat.TIFF:
+                        img.Save(ms, ImageFormat.Tiff);
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                DebugHelper.WriteException(e);
+                e.ShowError();
             }
 
             return ms;
@@ -820,8 +837,13 @@ namespace ShareX
                     string text = CodeMenuEntryPixelInfo.Parse(input, pointInfo.Color, pointInfo.Position);
                     ClipboardHelpers.CopyText(text);
 
-                    ShowNotificationTip(string.Format(Resources.TaskHelpers_OpenQuickScreenColorPicker_Copied_to_clipboard___0_, text),
-                        "ShareX - " + Resources.ScreenColorPicker);
+                    PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
+
+                    if (taskSettings.GeneralSettings.ShowToastNotificationAfterTaskCompleted)
+                    {
+                        ShowNotificationTip(string.Format(Resources.TaskHelpers_OpenQuickScreenColorPicker_Copied_to_clipboard___0_, text),
+                            "ShareX - " + Resources.ScreenColorPicker);
+                    }
                 }
             }
         }
@@ -928,6 +950,49 @@ namespace ShareX
             BorderlessWindowSettings settings = taskSettings.ToolsSettingsReference.BorderlessWindowSettings;
             BorderlessWindowForm borderlessWindowForm = new BorderlessWindowForm(settings);
             borderlessWindowForm.Show();
+        }
+
+        public static void MakeActiveWindowBorderless(TaskSettings taskSettings = null)
+        {
+            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+            try
+            {
+                IntPtr handle = NativeMethods.GetForegroundWindow();
+
+                if (handle.ToInt32() > 0)
+                {
+                    BorderlessWindowManager.ToggleBorderlessWindow(handle, taskSettings.ToolsSettings.BorderlessWindowSettings.ExcludeTaskbarArea);
+
+                    PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
+                }
+            }
+            catch (Exception e)
+            {
+                e.ShowError();
+            }
+        }
+
+        public static void MakeActiveWindowTopMost(TaskSettings taskSettings = null)
+        {
+            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+            try
+            {
+                IntPtr handle = NativeMethods.GetForegroundWindow();
+
+                if (handle.ToInt32() > 0)
+                {
+                    WindowInfo windowInfo = new WindowInfo(handle);
+                    windowInfo.TopMost = !windowInfo.TopMost;
+
+                    PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
+                }
+            }
+            catch (Exception e)
+            {
+                e.ShowError();
+            }
         }
 
         public static void OpenInspectWindow()
@@ -1289,26 +1354,26 @@ namespace ShareX
 
         public static async Task OCRImage(string filePath, TaskSettings taskSettings = null)
         {
-            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
-
             if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
             {
                 using (Bitmap bmp = ImageHelpers.LoadImage(filePath))
                 {
-                    await OCRImage(bmp, taskSettings, filePath);
+                    await OCRImage(bmp, filePath, taskSettings);
                 }
             }
         }
 
-        public static async Task OCRImage(Bitmap bmp, TaskSettings taskSettings = null, string filePath = null)
+        public static async Task OCRImage(Bitmap bmp, TaskSettings taskSettings = null)
+        {
+            await OCRImage(bmp, null, taskSettings);
+        }
+
+        public static async Task OCRImage(Bitmap bmp, string filePath = null, TaskSettings taskSettings = null)
         {
             if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
 
-            await OCRImage(bmp, taskSettings.CaptureSettingsReference.OCROptions, filePath);
-        }
+            OCROptions options = taskSettings.CaptureSettingsReference.OCROptions;
 
-        private static async Task OCRImage(Bitmap bmp, OCROptions options, string filePath = null)
-        {
             try
             {
                 OCRHelper.ThrowIfNotSupported();
@@ -1317,7 +1382,7 @@ namespace ShareX
                 {
                     if (options.Silent)
                     {
-                        await AsyncOCRImage(bmp, options, filePath);
+                        await AsyncOCRImage(bmp, filePath, taskSettings);
                     }
                     else
                     {
@@ -1340,90 +1405,93 @@ namespace ShareX
             }
         }
 
-        private static async Task AsyncOCRImage(Bitmap bmp, OCROptions options, string filePath = null)
+        private static async Task AsyncOCRImage(Bitmap bmp, string filePath = null, TaskSettings taskSettings = null)
         {
-            ShowNotificationTip(Resources.OCRForm_AutoProcessing);
-
-            string result = null;
-
             if (bmp != null)
             {
-                result = await OCRHelper.OCR(bmp, options.Language, options.ScaleFactor, options.SingleLine);
-            }
+                if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
 
-            if (!string.IsNullOrEmpty(result))
-            {
-                Program.MainForm.InvokeSafe(() =>
-                {
-                    ClipboardHelpers.CopyText(result);
-                });
+                OCROptions options = taskSettings.CaptureSettingsReference.OCROptions;
 
-                if (!string.IsNullOrEmpty(filePath))
+                string result = await OCRHelper.OCR(bmp, options.Language, options.ScaleFactor, options.SingleLine);
+
+                if (!string.IsNullOrEmpty(result))
                 {
-                    string textFilePath = Path.ChangeExtension(filePath, "txt");
-                    File.WriteAllText(textFilePath, result, Encoding.UTF8);
+                    Program.MainForm.InvokeSafe(() =>
+                    {
+                        ClipboardHelpers.CopyText(result);
+                    });
+
+                    if (!string.IsNullOrEmpty(filePath))
+                    {
+                        string textFilePath = Path.ChangeExtension(filePath, "txt");
+                        File.WriteAllText(textFilePath, result, Encoding.UTF8);
+                    }
+                }
+                else
+                {
+                    Program.MainForm.InvokeSafe(() =>
+                    {
+                        ClipboardHelpers.Clear();
+                    });
                 }
 
-                ShowNotificationTip(Resources.OCRForm_AutoComplete);
-            }
-            else
-            {
-                ShowNotificationTip(Resources.OCRForm_AutoCompleteFail);
+                PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
             }
         }
 
-        public static void PinToScreen()
+        public static void PinToScreen(TaskSettings taskSettings = null)
         {
             using (PinToScreenStartupForm form = new PinToScreenStartupForm())
             {
                 if (form.ShowDialog() == DialogResult.OK)
                 {
-                    PinToScreen(form.Image, form.PinToScreenLocation);
+                    PinToScreen(form.Image, form.PinToScreenLocation, taskSettings);
                 }
             }
         }
 
-        public static void PinToScreen(Image image, PinToScreenOptions options = null)
+        public static void PinToScreen(Image image, TaskSettings taskSettings = null)
         {
-            PinToScreen(image, null, options);
+            PinToScreen(image, null, taskSettings);
         }
 
-        public static void PinToScreen(Image image, Point? location, PinToScreenOptions options = null)
+        public static void PinToScreen(Image image, Point? location, TaskSettings taskSettings = null)
         {
             if (image != null)
             {
-                if (options == null)
-                {
-                    options = Program.DefaultTaskSettings.ToolsSettings.PinToScreenOptions;
-                }
+                if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
 
+                PinToScreenOptions options = taskSettings.ToolsSettingsReference.PinToScreenOptions;
                 options.BackgroundColor = ShareXResources.Theme.LightBackgroundColor;
 
                 PinToScreenForm.PinToScreenAsync(image, options, location);
+
+                PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
             }
         }
 
-        public static void PinToScreen(string filePath)
+        public static void PinToScreen(string filePath, TaskSettings taskSettings = null)
         {
             Image image = ImageHelpers.LoadImage(filePath);
 
-            PinToScreen(image);
+            PinToScreen(image, taskSettings);
         }
 
-        public static void PinToScreenFromScreen()
+        public static void PinToScreenFromScreen(TaskSettings taskSettings = null)
         {
             Image image = RegionCaptureTasks.GetRegionImage(out Rectangle rect);
 
-            PinToScreen(image, rect.Location);
+            PinToScreen(image, rect.Location, taskSettings);
         }
 
-        public static void PinToScreenFromClipboard()
+        public static void PinToScreenFromClipboard(TaskSettings taskSettings = null)
         {
             Image image = ClipboardHelpers.TryGetImage();
 
             if (image != null)
             {
-                PinToScreen(image);
+                PinToScreen(image, taskSettings);
             }
             else
             {
@@ -1431,14 +1499,23 @@ namespace ShareX
             }
         }
 
-        public static void PinToScreenFromFile()
+        public static void PinToScreenFromFile(TaskSettings taskSettings = null)
         {
             Image image = ImageHelpers.LoadImageWithFileDialog();
 
             if (image != null)
             {
-                PinToScreen(image);
+                PinToScreen(image, taskSettings);
             }
+        }
+
+        public static void PinToScreenCloseAll(TaskSettings taskSettings = null)
+        {
+            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+            PinToScreenForm.CloseAll();
+
+            PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
         }
 
         public static void TweetMessage()
@@ -1485,20 +1562,27 @@ namespace ShareX
             return EDataType.File;
         }
 
-        public static bool ToggleHotkeys()
+        public static bool ToggleHotkeys(TaskSettings taskSettings = null)
         {
             bool disableHotkeys = !Program.Settings.DisableHotkeys;
-            ToggleHotkeys(disableHotkeys);
+            ToggleHotkeys(disableHotkeys, taskSettings);
             return disableHotkeys;
         }
 
-        public static void ToggleHotkeys(bool disableHotkeys)
+        public static void ToggleHotkeys(bool disableHotkeys, TaskSettings taskSettings = null)
         {
+            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
             Program.Settings.DisableHotkeys = disableHotkeys;
             Program.HotkeyManager.ToggleHotkeys(disableHotkeys);
             Program.MainForm.UpdateToggleHotkeyButton();
 
-            ShowNotificationTip(disableHotkeys ? Resources.TaskHelpers_ToggleHotkeys_Hotkeys_disabled_ : Resources.TaskHelpers_ToggleHotkeys_Hotkeys_enabled_);
+            PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
+
+            if (taskSettings.GeneralSettings.ShowToastNotificationAfterTaskCompleted)
+            {
+                ShowNotificationTip(disableHotkeys ? Resources.TaskHelpers_ToggleHotkeys_Hotkeys_disabled_ : Resources.TaskHelpers_ToggleHotkeys_Hotkeys_enabled_);
+            }
         }
 
         public static bool CheckFFmpeg(TaskSettings taskSettings)
@@ -1524,45 +1608,64 @@ namespace ShareX
             return true;
         }
 
-        public static void PlayCaptureSound(TaskSettings taskSettings)
+        public static void PlayNotificationSoundAsync(NotificationSound notificationSound, TaskSettings taskSettings = null)
         {
             if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
 
-            if (taskSettings.GeneralSettings.UseCustomCaptureSound && !string.IsNullOrEmpty(taskSettings.GeneralSettings.CustomCaptureSoundPath))
+            switch (notificationSound)
             {
-                Helpers.PlaySoundAsync(taskSettings.GeneralSettings.CustomCaptureSoundPath);
-            }
-            else
-            {
-                Helpers.PlaySoundAsync(Resources.CaptureSound);
-            }
-        }
-
-        public static void PlayTaskCompleteSound(TaskSettings taskSettings)
-        {
-            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
-
-            if (taskSettings.GeneralSettings.UseCustomTaskCompletedSound && !string.IsNullOrEmpty(taskSettings.GeneralSettings.CustomTaskCompletedSoundPath))
-            {
-                Helpers.PlaySoundAsync(taskSettings.GeneralSettings.CustomTaskCompletedSoundPath);
-            }
-            else
-            {
-                Helpers.PlaySoundAsync(Resources.TaskCompletedSound);
-            }
-        }
-
-        public static void PlayErrorSound(TaskSettings taskSettings)
-        {
-            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
-
-            if (taskSettings.GeneralSettings.UseCustomErrorSound && !string.IsNullOrEmpty(taskSettings.GeneralSettings.CustomErrorSoundPath))
-            {
-                Helpers.PlaySoundAsync(taskSettings.GeneralSettings.CustomErrorSoundPath);
-            }
-            else
-            {
-                Helpers.PlaySoundAsync(Resources.ErrorSound);
+                case NotificationSound.Capture:
+                    if (taskSettings.GeneralSettings.PlaySoundAfterCapture)
+                    {
+                        if (taskSettings.GeneralSettings.UseCustomCaptureSound && !string.IsNullOrEmpty(taskSettings.GeneralSettings.CustomCaptureSoundPath))
+                        {
+                            Helpers.PlaySoundAsync(taskSettings.GeneralSettings.CustomCaptureSoundPath);
+                        }
+                        else
+                        {
+                            Helpers.PlaySoundAsync(Resources.CaptureSound);
+                        }
+                    }
+                    break;
+                case NotificationSound.TaskCompleted:
+                    if (taskSettings.GeneralSettings.PlaySoundAfterUpload)
+                    {
+                        if (taskSettings.GeneralSettings.UseCustomTaskCompletedSound && !string.IsNullOrEmpty(taskSettings.GeneralSettings.CustomTaskCompletedSoundPath))
+                        {
+                            Helpers.PlaySoundAsync(taskSettings.GeneralSettings.CustomTaskCompletedSoundPath);
+                        }
+                        else
+                        {
+                            Helpers.PlaySoundAsync(Resources.TaskCompletedSound);
+                        }
+                    }
+                    break;
+                case NotificationSound.ActionCompleted:
+                    if (taskSettings.GeneralSettings.PlaySoundAfterAction)
+                    {
+                        if (taskSettings.GeneralSettings.UseCustomActionCompletedSound && !string.IsNullOrEmpty(taskSettings.GeneralSettings.CustomActionCompletedSoundPath))
+                        {
+                            Helpers.PlaySoundAsync(taskSettings.GeneralSettings.CustomActionCompletedSoundPath);
+                        }
+                        else
+                        {
+                            Helpers.PlaySoundAsync(Resources.ActionCompletedSound);
+                        }
+                    }
+                    break;
+                case NotificationSound.Error:
+                    if (taskSettings.GeneralSettings.PlaySoundAfterUpload)
+                    {
+                        if (taskSettings.GeneralSettings.UseCustomErrorSound && !string.IsNullOrEmpty(taskSettings.GeneralSettings.CustomErrorSoundPath))
+                        {
+                            Helpers.PlaySoundAsync(taskSettings.GeneralSettings.CustomErrorSoundPath);
+                        }
+                        else
+                        {
+                            Helpers.PlaySoundAsync(Resources.ErrorSound);
+                        }
+                    }
+                    break;
             }
         }
 
@@ -1707,6 +1810,7 @@ namespace ShareX
                     case HotkeyType.PinToScreenFromScreen: return Resources.pin;
                     case HotkeyType.PinToScreenFromClipboard: return Resources.pin;
                     case HotkeyType.PinToScreenFromFile: return Resources.pin;
+                    case HotkeyType.PinToScreenCloseAll: return Resources.pin__minus;
                     case HotkeyType.ImageEditor: return Resources.image_pencil;
                     case HotkeyType.ImageBeautifier: return Resources.picture_sunset;
                     case HotkeyType.ImageEffects: return Resources.image_saturation;
@@ -1723,6 +1827,8 @@ namespace ShareX
                     case HotkeyType.IndexFolder: return Resources.folder_tree;
                     case HotkeyType.ClipboardViewer: return Resources.clipboard_block;
                     case HotkeyType.BorderlessWindow: return Resources.application_resize_full;
+                    case HotkeyType.ActiveWindowBorderless: return Resources.application_resize_full;
+                    case HotkeyType.ActiveWindowTopMost: return Resources.pin;
                     case HotkeyType.InspectWindow: return Resources.application_search_result;
                     case HotkeyType.MonitorTest: return Resources.monitor;
                     case HotkeyType.DNSChanger: return Resources.network_ip;
@@ -1919,6 +2025,8 @@ namespace ShareX
                 if (nativeMessagingInput != null)
                 {
                     if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+                    PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
 
                     switch (nativeMessagingInput.Action)
                     {
