@@ -2,7 +2,7 @@
 
 /*
     ShareX - A program that allows you to take screenshots and share any file type
-    Copyright (c) 2007-2024 ShareX Team
+    Copyright (c) 2007-2025 ShareX Team
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -86,8 +86,6 @@ namespace ShareX
             this.CloseOnEscape();
             cmsTray.IgnoreSeparatorClick();
             cmsTaskInfo.IgnoreSeparatorClick();
-            tsddbWorkflows.HideImageMargin();
-            tsmiTrayWorkflows.HideImageMargin();
             tsmiMonitor.HideImageMargin();
             tsmiTrayMonitor.HideImageMargin();
             tsmiOpen.HideImageMargin();
@@ -203,11 +201,6 @@ namespace ShareX
             }
 
             ExportImportControl.UploadRequested += json => UploadManager.UploadText(json);
-
-#if MicrosoftStore
-            tsmiDNSChanger.Visible = false;
-            tsmiTrayDNSChanger.Visible = false;
-#endif
 
             if (SystemOptions.DisableUpload)
             {
@@ -438,17 +431,21 @@ namespace ShareX
 
         private ToolStripMenuItem WorkflowMenuItem(HotkeySettings hotkeySetting)
         {
-            ToolStripMenuItem tsmi = new ToolStripMenuItem(hotkeySetting.TaskSettings.ToString().Replace("&", "&&"));
+            ToolStripMenuItem tsmi = new ToolStripMenuItem();
+
+            tsmi.Text = hotkeySetting.TaskSettings.ToString().Replace("&", "&&");
+
+            if (!hotkeySetting.TaskSettings.IsUsingDefaultSettings)
+            {
+                tsmi.Text += "*";
+            }
 
             if (hotkeySetting.HotkeyInfo.IsValidHotkey)
             {
                 tsmi.ShortcutKeyDisplayString = "  " + hotkeySetting.HotkeyInfo;
             }
 
-            if (!hotkeySetting.TaskSettings.IsUsingDefaultSettings)
-            {
-                tsmi.Font = new Font(tsmi.Font, FontStyle.Bold);
-            }
+            tsmi.Image = TaskHelpers.FindMenuIcon(hotkeySetting.TaskSettings.Job);
 
             tsmi.Click += async (sender, e) => await TaskHelpers.ExecuteJob(hotkeySetting.TaskSettings);
 
@@ -1759,7 +1756,7 @@ namespace ShareX
             TaskHelpers.OpenImageCombiner();
         }
 
-        private void TsmiImageSplitter_Click(object sender, EventArgs e)
+        private void tsmiImageSplitter_Click(object sender, EventArgs e)
         {
             TaskHelpers.OpenImageSplitter();
         }
@@ -1808,6 +1805,11 @@ namespace ShareX
             TaskHelpers.OpenHashCheck();
         }
 
+        private void tsmiMetadata_Click(object sender, EventArgs e)
+        {
+            TaskHelpers.OpenMetadataWindow();
+        }
+
         private void tsmiIndexFolder_Click(object sender, EventArgs e)
         {
             TaskHelpers.OpenDirectoryIndexer();
@@ -1831,11 +1833,6 @@ namespace ShareX
         private void tsmiMonitorTest_Click(object sender, EventArgs e)
         {
             TaskHelpers.OpenMonitorTest();
-        }
-
-        private void tsmiDNSChanger_Click(object sender, EventArgs e)
-        {
-            TaskHelpers.OpenDNSChanger();
         }
 
         private void TsddbAfterCaptureTasks_DropDownOpening(object sender, EventArgs e)

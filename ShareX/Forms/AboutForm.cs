@@ -2,7 +2,7 @@
 
 /*
     ShareX - A program that allows you to take screenshots and share any file type
-    Copyright (c) 2007-2024 ShareX Team
+    Copyright (c) 2007-2025 ShareX Team
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -98,6 +98,7 @@ McoreD: {Links.McoreD}
 {Resources.AboutForm_AboutForm_Language_ro}: https://github.com/Edward205
 {Resources.AboutForm_AboutForm_Language_pl}: https://github.com/RikoDEV
 {Resources.AboutForm_AboutForm_Language_he_IL}: https://github.com/erelado
+{Resources.AboutForm_AboutForm_Language_ar_YE}: https://github.com/OthmanAliModaes
 ", FontStyle.Regular);
 
             rtbInfo.AppendLine(Resources.AboutForm_AboutForm_Credits, FontStyle.Bold, 13);
@@ -112,9 +113,10 @@ ZXing.Net: https://github.com/micjahn/ZXing.Net
 MegaApiClient: https://github.com/gpailler/MegaApiClient
 Inno Setup Dependency Installer: https://github.com/DomGries/InnoDependencyInstaller
 Blob Emoji: http://blobs.gg
+ExifTool: https://exiftool.org
 ", FontStyle.Regular);
 
-            rtbInfo.AppendText("Copyright (c) 2007-2024 ShareX Team", FontStyle.Bold, 13);
+            rtbInfo.AppendText("Copyright (c) 2007-2025 ShareX Team", FontStyle.Bold, 13);
 
             easterEgg = new EasterEggAboutAnimation(cLogo, this);
         }
