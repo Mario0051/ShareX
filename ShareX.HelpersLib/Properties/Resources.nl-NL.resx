@@ -403,9 +403,6 @@ Wil je deze downloaden?</value>
   <data name="ScreenRecordGIFEncoding_FFmpeg" xml:space="preserve">
     <value>FFmpeg (Goede kwaliteit)</value>
   </data>
-  <data name="HotkeyType_TweetMessage" xml:space="preserve">
-    <value>Tweet bericht</value>
-  </data>
   <data name="HotkeyType_StopUploads" xml:space="preserve">
     <value>Stop alle actieve uploads</value>
   </data>
@@ -679,5 +676,8 @@ Wil je deze downloaden en installeren?</value>
   </data>
   <data name="AfterCaptureTasks_CopyFileToClipboard" xml:space="preserve">
     <value>Kopieer bestand naar klembord</value>
+  </data>
+  <data name="HotkeyType_Metadata" xml:space="preserve">
+    <value />
   </data>
 </root>

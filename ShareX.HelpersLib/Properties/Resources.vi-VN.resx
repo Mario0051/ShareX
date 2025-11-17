@@ -526,9 +526,6 @@ Bạn có muốn tải về không?</value>
   <data name="ScreenRecordGIFEncoding_FFmpeg" xml:space="preserve">
     <value>FFmpeg (Chất lượng tốt)</value>
   </data>
-  <data name="HotkeyType_TweetMessage" xml:space="preserve">
-    <value>Tweet tin nhắn</value>
-  </data>
   <data name="DrawImageSizeMode_DontResize" xml:space="preserve">
     <value>Không thay đổi kích thước</value>
   </data>
@@ -1198,5 +1195,8 @@ Bạn có muốn tải về và cài đặt không?</value>
   </data>
   <data name="ShapeType_DrawingFreehandArrow" xml:space="preserve">
     <value>Mũi tên tự do</value>
+  </data>
+  <data name="HotkeyType_Metadata" xml:space="preserve">
+    <value />
   </data>
 </root>

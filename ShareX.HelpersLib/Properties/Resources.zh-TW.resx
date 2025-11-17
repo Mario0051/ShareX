@@ -526,9 +526,6 @@
   <data name="ScreenRecordGIFEncoding_FFmpeg" xml:space="preserve">
     <value>FFmpeg (高品質)</value>
   </data>
-  <data name="HotkeyType_TweetMessage" xml:space="preserve">
-    <value>推特發文</value>
-  </data>
   <data name="DrawImageSizeMode_DontResize" xml:space="preserve">
     <value>不調整大小</value>
   </data>
@@ -1237,5 +1234,8 @@
   </data>
   <data name="HotkeyType_PinToScreenCloseAll" xml:space="preserve">
     <value>釘選至螢幕 (關閉所有視窗)</value>
+  </data>
+  <data name="HotkeyType_Metadata" xml:space="preserve">
+    <value />
   </data>
 </root>

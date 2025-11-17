@@ -162,26 +162,13 @@ namespace ShareX.ScreenCaptureLib
             infoFontBig = new Font("Verdana", 16, FontStyle.Bold);
             markerPen = new Pen(Color.FromArgb(200, Color.Red));
 
-            if (ShareXResources.UseCustomTheme)
-            {
-                canvasBackgroundColor = ShareXResources.Theme.BackgroundColor;
-                canvasBorderColor = ShareXResources.Theme.BorderColor;
-                textColor = ShareXResources.Theme.TextColor;
-                textShadowColor = ShareXResources.Theme.BorderColor;
-                textBackgroundColor = Color.FromArgb(200, ShareXResources.Theme.BackgroundColor);
-                textOuterBorderColor = Color.FromArgb(200, ShareXResources.Theme.SeparatorDarkColor);
-                textInnerBorderColor = Color.FromArgb(200, ShareXResources.Theme.SeparatorLightColor);
-            }
-            else
-            {
-                canvasBackgroundColor = Color.FromArgb(200, 200, 200);
-                canvasBorderColor = Color.FromArgb(176, 176, 176);
-                textColor = Color.White;
-                textShadowColor = Color.Black;
-                textBackgroundColor = Color.FromArgb(200, Color.FromArgb(42, 131, 199));
-                textOuterBorderColor = Color.FromArgb(200, Color.White);
-                textInnerBorderColor = Color.FromArgb(200, Color.FromArgb(0, 81, 145));
-            }
+            canvasBackgroundColor = ShareXResources.Theme.BackgroundColor;
+            canvasBorderColor = ShareXResources.Theme.BorderColor;
+            textColor = ShareXResources.Theme.TextColor;
+            textShadowColor = ShareXResources.Theme.BorderColor;
+            textBackgroundColor = Color.FromArgb(200, ShareXResources.Theme.BackgroundColor);
+            textOuterBorderColor = Color.FromArgb(200, ShareXResources.Theme.SeparatorDarkColor);
+            textInnerBorderColor = Color.FromArgb(200, ShareXResources.Theme.SeparatorLightColor);
 
             canvasBorderPen = new Pen(canvasBorderColor);
             textBrush = new SolidBrush(textColor);
@@ -1041,9 +1028,10 @@ namespace ShareX.ScreenCaptureLib
 
                     DrawRuler(g, ShapeManager.CurrentRectangle, borderPen, 5, 10);
                     DrawRuler(g, ShapeManager.CurrentRectangle, borderPen, 15, 100);
-
-                    g.DrawCross(borderPen, ShapeManager.CurrentRectangle.Center(), 10);
                 }
+
+                g.DrawCross(Pens.Black, ShapeManager.CurrentRectangle.Center().Add(-1, -1), 10);
+                g.DrawCross(Pens.White, ShapeManager.CurrentRectangle.Center(), 10);
 
                 DrawRegionArea(g, ShapeManager.CurrentRectangle, true);
             }
@@ -1106,6 +1094,20 @@ namespace ShareX.ScreenCaptureLib
             else
             {
                 g.DrawRectangleProper(borderDotStaticPen, rect);
+            }
+        }
+
+        internal void DrawRegionAreaEllipse(Graphics g, RectangleF rect, bool isAnimated)
+        {
+            g.DrawEllipse(borderPen, rect);
+
+            if (isAnimated)
+            {
+                g.DrawEllipse(borderDotPen, rect);
+            }
+            else
+            {
+                g.DrawEllipse(borderDotStaticPen, rect);
             }
         }
 

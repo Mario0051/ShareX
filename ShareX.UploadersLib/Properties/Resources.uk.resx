@@ -197,7 +197,7 @@
     <value>Коренева тека</value>
   </data>
   <data name="UploadersConfigForm_Remove_all_custom_uploaders_Confirmation" xml:space="preserve">
-    <value>Вилучити всі користувацькі вивантажувачі?</value>
+    <value>Вилучити всі власні вивантажувачі?</value>
   </data>
   <data name="OAuthControl_OAuthControl_PasteVerificationCodeHere" xml:space="preserve">
     <value>Вставте код підтвердження сюди</value>
@@ -281,7 +281,7 @@
     <value>URL-адреса для видалення</value>
   </data>
   <data name="ExportFailed" xml:space="preserve">
-    <value>Експорт не вдався.</value>
+    <value>Збій експорту.</value>
   </data>
   <data name="LoggedInAs0" xml:space="preserve">
     <value>Вхід здійснено як {0}.</value>

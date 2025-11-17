@@ -145,11 +145,12 @@ namespace ShareX
         CopyFileToClipboard = 1 << 12,
         CopyFilePathToClipboard = 1 << 13,
         ShowInExplorer = 1 << 14,
-        ScanQRCode = 1 << 15,
-        DoOCR = 1 << 16,
-        ShowBeforeUploadWindow = 1 << 17,
-        UploadImageToHost = 1 << 18,
-        DeleteFile = 1 << 19
+        AnalyzeImage = 1 << 15,
+        ScanQRCode = 1 << 16,
+        DoOCR = 1 << 17,
+        ShowBeforeUploadWindow = 1 << 18,
+        UploadImageToHost = 1 << 19,
+        DeleteFile = 1 << 20
     }
 
     [Flags]
@@ -205,8 +206,6 @@ namespace ShareX
         [Category(EnumExtensions.HotkeyType_Category_Upload)]
         ShortenURL,
         [Category(EnumExtensions.HotkeyType_Category_Upload)]
-        TweetMessage,
-        [Category(EnumExtensions.HotkeyType_Category_Upload)]
         StopUploads,
         // Screen capture
         [Category(EnumExtensions.HotkeyType_Category_ScreenCapture)]
@@ -233,6 +232,8 @@ namespace ShareX
         AutoCapture,
         [Category(EnumExtensions.HotkeyType_Category_ScreenCapture)]
         StartAutoCapture,
+        [Category(EnumExtensions.HotkeyType_Category_ScreenCapture)]
+        StopAutoCapture,
         // Screen record
         [Category(EnumExtensions.HotkeyType_Category_ScreenRecord)]
         ScreenRecorder,
@@ -292,13 +293,21 @@ namespace ShareX
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         VideoThumbnailer,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        AnalyzeImage,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
         OCR,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         QRCode,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         QRCodeDecodeFromScreen,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        QRCodeScanRegion,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
         HashCheck,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        Metadata,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        StripMetadata,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         IndexFolder,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
@@ -344,7 +353,8 @@ namespace ShareX
         OpenFolder,
         OpenUrl,
         Upload,
-        PinToScreen
+        PinToScreen,
+        DeleteFile
     }
 
     public enum ThumbnailViewClickAction // Localized
@@ -384,6 +394,12 @@ namespace ShareX
     public enum RegionCaptureType
     {
         Default, Light, Transparent
+    }
+
+    public enum ScreenTearingTestMode
+    {
+        VerticalLines,
+        HorizontalLines
     }
 
 #if !MicrosoftStore

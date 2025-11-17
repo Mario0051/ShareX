@@ -38,7 +38,8 @@ namespace ShareX
 {
     public partial class MetadataForm : Form
     {
-        public string ExifToolPath { get; set; } = FileHelpers.GetAbsolutePath("exiftool.exe");
+        public static string ExifToolPath => FileHelpers.GetAbsolutePath("exiftool.exe");
+
         public string FilePath { get; private set; }
 
         private string title;
@@ -111,7 +112,7 @@ namespace ShareX
             return await Task.Run(() => GetFileMetadata(filePath));
         }
 
-        private void StripFileMetadata(string filePath)
+        public static void StripFileMetadata(string filePath)
         {
             StringBuilder sbArguments = new StringBuilder();
             sbArguments.Append($"\"{filePath}\"");
@@ -220,19 +221,18 @@ namespace ShareX
 
         private async Task OpenFile()
         {
-            using (OpenFileDialog ofd = new OpenFileDialog())
+            string filePath = FileHelpers.BrowseFile(this);
+
+            await OpenFile(filePath);
+        }
+
+        private async Task OpenFile(string filePath)
+        {
+            if (!string.IsNullOrEmpty(filePath))
             {
-                if (ofd.ShowDialog(this) == DialogResult.OK)
-                {
-                    string filePath = ofd.FileName;
+                FilePath = filePath;
 
-                    if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
-                    {
-                        FilePath = filePath;
-
-                        await LoadMetadata();
-                    }
-                }
+                await LoadMetadata();
             }
         }
 
@@ -291,6 +291,26 @@ namespace ShareX
                 TaskHelpers.PlayNotificationSoundAsync(NotificationSound.ActionCompleted);
 
                 await LoadMetadata();
+            }
+        }
+
+        private void MetadataForm_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop, false))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private async void MetadataForm_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop, false) && e.Data.GetData(DataFormats.FileDrop, false) is string[] files && files.Length > 0)
+            {
+                await OpenFile(files[0]);
             }
         }
     }
