@@ -2081,40 +2081,6 @@
             // 
             AllowDrop = true;
             resources.ApplyResources(this, "$this");
-<<<<<<< HEAD
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Window;
-            this.Controls.Add(this.pMain);
-            this.Controls.Add(this.pToolbars);
-            this.DoubleBuffered = true;
-            this.Name = "MainForm";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
-            this.Shown += new System.EventHandler(this.MainForm_Shown);
-            // ***mod*** start
-            this.Activated += new System.EventHandler(this.MainForm_Activated);
-            // ***mod*** stop
-            this.LocationChanged += new System.EventHandler(this.MainForm_LocationChanged);
-            this.SizeChanged += new System.EventHandler(this.MainForm_SizeChanged);
-            this.DragDrop += new System.Windows.Forms.DragEventHandler(this.MainForm_DragDrop);
-            this.DragEnter += new System.Windows.Forms.DragEventHandler(this.MainForm_DragEnter);
-            this.Resize += new System.EventHandler(this.MainForm_Resize);
-            this.scMain.Panel1.ResumeLayout(false);
-            this.scMain.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.scMain)).EndInit();
-            this.scMain.ResumeLayout(false);
-            this.tsMain.ResumeLayout(false);
-            this.tsMain.PerformLayout();
-            this.cmsTaskInfo.ResumeLayout(false);
-            this.cmsTray.ResumeLayout(false);
-            this.pToolbars.ResumeLayout(false);
-            this.pToolbars.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvHotkeys)).EndInit();
-            this.pMain.ResumeLayout(false);
-            this.pHotkeys.ResumeLayout(false);
-            this.ResumeLayout(false);
-            this.PerformLayout();
-=======
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
             Controls.Add(pMain);
@@ -2124,6 +2090,9 @@
             FormClosing += MainForm_FormClosing;
             FormClosed += MainForm_FormClosed;
             Shown += MainForm_Shown;
+            // ***mod*** start
+            Activated += MainForm_Activated;
+            // ***mod*** stop
             LocationChanged += MainForm_LocationChanged;
             SizeChanged += MainForm_SizeChanged;
             VisibleChanged += MainForm_VisibleChanged;
@@ -2145,7 +2114,6 @@
             pHotkeys.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
->>>>>>> upstream/develop
 
         }
 
